@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="hu">
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+<meta charset="UTF-8">
+<title>hasznaltlanyok.hu</title>
+
+<style>
+  body {
+    margin: 0;
+    background: radial-gradient(circle at top, #1a0000, #000);
+    color: white;
+    font-family: Arial, sans-serif;
+    text-align: center;
+  }
+
+  #gate {
+    position: relative;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    animation: fadeIn 0.6s ease-out, glowPulse 3s infinite;
+  }
+
+  h1 {
+    font-size: 48px;
+    margin-bottom: 10px;
+    color: #ff2d2d;
+    text-shadow: 0 0 15px rgba(255,45,45,0.7);
+  }
+
+  p {
+    font-size: 20px;
+    margin-bottom: 20px;
+  }
+
+  button {
+    padding: 12px 30px;
+    margin: 10px;
+    font-size: 18px;
+    cursor: pointer;
+    border: none;
+    border-radius: 6px;
+  }
+
+  .yes {
+    background: linear-gradient(#ff3b3b, #b00000);
+    box-shadow: 0 0 12px rgba(255,0,0,0.6);
+    color: white;
+    transition: transform 140ms ease;
+  }
+  .yes:hover {
+    transform: scale(1.05);
+  }
+
+  .no {
+    background: #555;
+    color: white;
+  }
+
+  #videoContainer {
+    display: none;
+    position: relative;
+    height: 100vh;
+  }
+
+  iframe {
+    width: 100%;
+    height: 100%;
+    border: 0;
+  }
+
+  #soundBtn {
+    position: absolute;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #d32f2f;
+    color: white;
+    font-size: 18px;
+    padding: 12px 26px;
+    border-radius: 30px;
+    cursor: pointer;
+  }
+  /* Back button overlay in top-left of the video */
+  #backBtn {
+    position: absolute;
+    top: 18px;
+    left: 18px;
+    background: rgba(0,0,0,0.5);
+    color: white;
+    padding: 8px 12px;
+    font-size: 14px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    z-index: 10;
+  }
+
+  .badge {
+    position: absolute;
+    bottom: 18px;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 2px solid #ff2d2d;
+    color: #ff2d2d;
+    padding: 6px 10px;
+    font-weight: bold;
+    font-size: 14px;
+    opacity: 0.8;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: scale(0.95); }
+    to { opacity: 1; transform: scale(1); }
+  }
+
+  @keyframes glowPulse {
+    0% { box-shadow: 0 0 10px rgba(255,0,0,0.3); }
+    50% { box-shadow: 0 0 25px rgba(255,0,0,0.7); }
+    100% { box-shadow: 0 0 10px rgba(255,0,0,0.3); }
+  }
+
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    background: repeating-linear-gradient(
+      to bottom,
+      rgba(255,255,255,0.02),
+      rgba(255,255,255,0.02) 1px,
+      transparent 1px,
+      transparent 3px
+    );
+    pointer-events: none;
+  }
+
+  body::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    background: radial-gradient(circle, transparent 40%, rgba(0,0,0,0.8));
+  }
+</style>
+</head>
+
+<body>
+
+<!-- 18+ BELÉPŐ -->
+<div id="gate">
+  <h1>hasznaltlanyok.hu</h1>
+  <div class="badge">18+ ADULT CONTENT</div>
+  <p>Elmúltál 18 éves?</p>
+
+  <div>
+    <button class="yes" onclick="enterSite()">Igen</button>
+    <button class="no" onclick="reject()">Nem</button>
+  </div>
+
+  <p id="rejectText" style="display:none; opacity:0.8;">
+    A tartalom kizárólag felnőttek számára érhető el.<br>
+    Kérjük, hagyd el az oldalt.
+  </p>
+</div>
+
+<!-- VIDEÓ -->
+<div id="videoContainer">
+  <button id="backBtn" onclick="backToGate()">← Vissza</button>
+  <iframe
+    id="player"
+    src="https://www.youtube.com/embed/j16cHCTmJ5E?autoplay=1&mute=1&loop=1&playlist=j16cHCTmJ5E&controls=0&rel=0&enablejsapi=1"
+    allow="autoplay; fullscreen">
+  </iframe>
+
+  <button id="soundBtn" onclick="enableSound()">🔊 Hang bekapcsolása</button>
+</div>
+
+<script>
+  // Reference to the iframe element; keep iframe in place for minimal layout changes
+  const playerIframe = document.getElementById("player");
+  const soundBtn = document.getElementById("soundBtn");
+  let ytPlayer = null;
+
+  // Load YouTube IFrame API (minimal, inline)
+  (function loadYouTubeAPI() {
+    const tag = document.createElement('script');
+    tag.src = 'https://www.youtube.com/iframe_api';
+    document.head.appendChild(tag);
+  })();
+
+  // Called by the YouTube IFrame API when ready
+  function onYouTubeIframeAPIReady() {
+    ytPlayer = new YT.Player('player', {
+      playerVars: {
+        autoplay: 1,
+        mute: 1,
+        loop: 1,
+        playlist: 'j16cHCTmJ5E',
+        controls: 0,
+        rel: 0,
+        playsinline: 1
+      },
+      events: {
+        onReady: function(event) {
+          // Seek to 1.1s shortly after ready/autoplay
+          try {
+            setTimeout(function() { ytPlayer.seekTo(1.1, true); }, 150);
+          } catch (e) { }
+        }
+      }
+    });
+  }
+
+  function enterSite() {
+    document.getElementById("gate").style.display = "none";
+    document.getElementById("videoContainer").style.display = "block";
+
+    // Keep previous unmute mechanism via postMessage for click-derived unmute
+    if (playerIframe && playerIframe.contentWindow) {
+      playerIframe.contentWindow.postMessage('{"event":"command","func":"unMute","args":""}', '*');
+    }
+
+    if (soundBtn) soundBtn.style.display = 'none';
+  }
+
+  function reject() {
+    document.getElementById("rejectText").style.display = "block";
+  }
+
+  function enableSound() {
+    if (playerIframe && playerIframe.contentWindow) {
+      playerIframe.contentWindow.postMessage('{"event":"command","func":"unMute","args":""}', '*');
+    }
+    if (soundBtn) soundBtn.style.display = 'none';
+  }
+
+  function backToGate() {
+    // Prefer direct API if available, fallback to postMessage
+    if (ytPlayer && typeof ytPlayer.pauseVideo === 'function') {
+      try { ytPlayer.pauseVideo(); } catch (e) {}
+      try { ytPlayer.mute(); } catch (e) {}
+    } else if (playerIframe && playerIframe.contentWindow) {
+      playerIframe.contentWindow.postMessage('{"event":"command","func":"pauseVideo","args":""}', '*');
+      playerIframe.contentWindow.postMessage('{"event":"command","func":"mute","args":""}', '*');
+    }
+
+    document.getElementById("videoContainer").style.display = "none";
+    document.getElementById("gate").style.display = "flex";
+    if (soundBtn) soundBtn.style.display = 'none';
+  }
+</script>
+
+</body>
+</html>
